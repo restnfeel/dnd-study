@@ -26,7 +26,7 @@ const boxSource = {
     const dropResult = monitor.getDropResult();
 
     if (dropResult && item.index !== dropResult.index) {
-      item.handleDrop(item.index);
+      item.handleDrop(item.index, dropResult.index);
     }
   }
 };

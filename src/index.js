@@ -5,20 +5,13 @@ import Tab from "@material-ui/core/Tab";
 import AppBar from "@material-ui/core/AppBar";
 import Typography from "@material-ui/core/Typography";
 import GridList from "@material-ui/core/GridList";
+import Toolbar from "@material-ui/core/Toolbar";
 import GridListTile from "@material-ui/core/GridListTile";
-import GridListTileBar from "@material-ui/core/GridListTileBar";
 
 import DndTab from "./dnd/DndTab";
+import RowComp from "./dnd/RowComp";
 
 import * as components from "./components";
-
-function TabContainer({ children, dir }) {
-  return (
-    <Typography component="div" dir={dir} style={{ padding: 8 * 3 }}>
-      {children}
-    </Typography>
-  );
-}
 
 /**
  * @author restnfeel@gmail.com
@@ -26,7 +19,8 @@ function TabContainer({ children, dir }) {
 class Index extends Component {
   state = {
     value: 0,
-    compKeys: []
+    compKeys: [],
+    rows: {}
   };
 
   componentDidMount() {
@@ -47,14 +41,37 @@ class Index extends Component {
     this.setState({ value: index });
   };
 
-  removeTab = idx => {
-    let arr = this.state.compKeys;
+  removeTab = (idx, targetIdx) => {
+    let arr = Object.assign([], this.state.compKeys);
+
+    const Dynamic = components[arr[idx]];
+    const Original = components[arr[targetIdx]];
+    const targetKey = arr[targetIdx];
+    let rowsArr = Object.assign([], this.state.rows[targetKey]);
+    if (rowsArr.indexOf(Original) === -1) {
+      rowsArr.push(Original);
+    }
+
+    if (arr[idx] in this.state.rows) {
+      const destArr = this.state.rows[arr[idx]];
+      destArr.map(Dyn => {
+        rowsArr.push(Dyn);
+      });
+    } else {
+      rowsArr.push(Dynamic);
+    }
+
     arr.splice(idx, 1);
-    this.setState({ compKeys: arr });
+
+    this.setState({
+      compKeys: arr,
+      rows: { ...this.state.rows, [targetKey]: rowsArr }
+    });
+    console.log("[check state] ", targetIdx, this.state);
   };
 
   render() {
-    const { compKeys } = this.state;
+    const { compKeys, rows } = this.state;
 
     return (
       <Fragment>
@@ -72,30 +89,28 @@ class Index extends Component {
                   index={idx}
                   label={item}
                   onClick={() => this.handleChange(idx)}
-                  handleDrop={() => this.removeTab(idx)}
+                  handleDrop={this.removeTab}
                 />
               );
             })}
           </Tabs>
         </AppBar>
-        <GridList>
-          <SwipeableViews
-            axis={"x-reverse"}
-            index={this.state.value}
-            onChangeIndex={this.handleChangeIndex}
-          >
-            {compKeys.map((item, idx) => {
-              const Dynamic = components[`${item}`];
-              return (
-                <TabContainer key={item}>
-                  <GridListTile>
-                    <Dynamic />
-                  </GridListTile>
-                </TabContainer>
-              );
-            })}
-          </SwipeableViews>
-        </GridList>
+
+        <SwipeableViews
+          axis={"x-reverse"}
+          index={this.state.value}
+          onChangeIndex={this.handleChangeIndex}
+        >
+          {compKeys.map((item, idx) => {
+            const Dynamic = components[`${item}`];
+            const targetKey = item;
+            return (
+              <RowComp key={item} target={targetKey} rows={rows}>
+                <Dynamic />
+              </RowComp>
+            );
+          })}
+        </SwipeableViews>
       </Fragment>
     );
   }
